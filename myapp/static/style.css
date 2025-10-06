@@ -1,0 +1,84 @@
+.profile-image-wrapper {
+    width: 200px;
+    height: 200px;
+    border-radius: 50%;
+    overflow: hidden;          /* KLUCZOWE: ukrywa części obrazka które "wystają" */
+    margin: 0 auto 1rem auto;
+    border: 4px solid rgba(255, 255, 255, 0.4);
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+    position: relative;
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+/* Efekt przy najechaniu myszką */
+.profile-image-wrapper:hover {
+    transform: scale(1.05);
+    box-shadow: 0 12px 35px rgba(0, 0, 0, 0.25);
+}
+
+/* Style dla obrazka */
+.profile-image {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;         /* KLUCZOWE: przycina obrazek zachowując proporcje */
+    object-position: center center;  /* wyśrodkowuje obrazek */
+    display: block;
+    transition: transform 0.3s ease;
+}
+
+/* Subtelny zoom przy hover */
+.profile-image-wrapper:hover .profile-image {
+    transform: scale(1.1);
+}
+
+/* Placeholder gdy nie ma zdjęcia */
+.profile-placeholder {
+    width: 200px;
+    height: 200px;
+    border-radius: 50%;
+    margin: 0 auto 1rem auto;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 4px solid rgba(255, 255, 255, 0.4);
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+    transition: transform 0.3s ease;
+}
+
+.profile-placeholder:hover {
+    transform: scale(1.05);
+}
+
+.placeholder-text {
+    font-size: 4rem;
+    font-weight: bold;
+    color: white;
+    text-transform: uppercase;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+/* Responsywność - mniejszy na telefonach */
+@media (max-width: 768px) {
+    .profile-image-wrapper,
+    .profile-placeholder {
+        width: 150px;
+        height: 150px;
+    }
+
+    .placeholder-text {
+        font-size: 3rem;
+    }
+}
+
+@media (max-width: 480px) {
+    .profile-image-wrapper,
+    .profile-placeholder {
+        width: 120px;
+        height: 120px;
+    }
+
+    .placeholder-text {
+        font-size: 2.5rem;
+    }
+}

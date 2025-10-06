@@ -1,0 +1,32 @@
+body {
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+}
+
+.main-container {
+    flex: 1;
+}
+
+.footer {
+    background-color: #f8f9fa; /* A light grey, similar to the navbar */
+    padding: 2rem 0;
+    color: #6c757d; /* Muted text color */
+    margin-top: auto; /* Pushes the footer to the bottom */
+}
+
+.footer a {
+    color: #343a40;
+    transition: color 0.2s ease-in-out;
+    font-size: 1.5rem; /* Larger icons */
+    margin: 0 0.5rem;
+}
+
+.footer a:hover {
+    color: #007bff; /* Bootstrap primary color for hover */
+    text-decoration: none;
+}
+
+.footer .social-icons {
+    font-size: 1.25rem;
+}

@@ -1,0 +1,84 @@
+/* Główny kontener osi czasu */
+.timeline {
+    position: relative;
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+/* Pionowa linia przechodząca przez środek */
+.timeline::after {
+    content: '';
+    position: absolute;
+    width: 6px;
+    background-color: #007bff; /* Kolor linii */
+    top: 0;
+    bottom: 0;
+    left: 50%;
+    margin-left: -3px;
+    border-radius: 3px;
+}
+
+/* Kontener dla każdego etapu */
+.timeline-container {
+    padding: 10px 40px;
+    position: relative;
+    background-color: inherit;
+    width: 50%;
+}
+
+/* Kółko na osi czasu */
+.timeline-container::after {
+    content: '';
+    position: absolute;
+    width: 25px;
+    height: 25px;
+    right: -12px;
+    background-color: white;
+    border: 4px solid #007bff;
+    top: 15px;
+    border-radius: 50%;
+    z-index: 1;
+}
+
+/* Kontenery po lewej stronie */
+.left {
+    left: 0;
+}
+
+/* Kontenery po prawej stronie */
+.right {
+    left: 50%;
+}
+
+/* Poprawka dla kółka w kontenerach po prawej stronie */
+.right::after {
+    left: -13px;
+}
+
+/* Treść wewnątrz kontenera */
+.timeline-content {
+    padding: 20px 30px;
+    background-color: #f8f9fa;
+    position: relative;
+    border-radius: 6px;
+    border: 1px solid #dee2e6;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.05);
+}
+
+/* Responsywność - na mniejszych ekranach oś czasu staje się w pełni pionowa */
+@media screen and (max-width: 768px) {
+    .timeline::after {
+        left: 31px;
+    }
+    .timeline-container {
+        width: 100%;
+        padding-left: 70px;
+        padding-right: 25px;
+    }
+    .left::after, .right::after {
+        left: 18px;
+    }
+    .right {
+        left: 0%;
+    }
+}

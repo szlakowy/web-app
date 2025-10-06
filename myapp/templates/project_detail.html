@@ -1,0 +1,37 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ project.title }} - Szczegóły Projektu{% endblock %}
+
+{% block content %}
+<div class="container mt-5 mb-5">
+    <div class="row">
+        <div class="col-lg-8 offset-lg-2">
+            <!-- Project Title -->
+            <h1 class="mb-3">{{ project.title }}</h1>
+
+            <!-- Publication Date and Technologies -->
+            <div class="d-flex justify-content-between text-muted mb-4">
+                <span>Data publikacji: {{ project.created_date|date:"d F Y" }}</span>
+                <span>Technologie: {{ project.technologies }}</span>
+            </div>
+
+            <!-- Full Project Description -->
+            <div class="project-description" style="line-height: 1.7;">
+                <p class="lead">{{ project.description }}</p>
+            </div>
+
+            <!-- GitHub Link -->
+            {% if project.github_url %}
+                <a href="{{ project.github_url }}" class="btn btn-primary mt-4" target="_blank" rel="noopener noreferrer">
+                    <i class="fab fa-github"></i> Zobacz kod na GitHub
+                </a>
+            {% endif %}
+
+            <!-- Back to All Projects -->
+            <div class="text-center mt-5">
+                <a href="{% url 'projects' %}" class="btn btn-secondary">Wróć do wszystkich projektów</a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,114 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'timeline.css' %}">
+{% endblock %}
+
+
+{% block title %}{{ personal_info.first_name }} {{ personal_info.last_name }} - Portfolio{% endblock %}
+
+{% block content %}
+<!-- Sekcja główna z informacjami o Tobie -->
+{% if personal_info %}
+<div class="jumbotron bg-primary text-white text-center mb-4">
+    <div class="container">
+        <div class="row align-items-center">
+
+            <div class="col-md-4">
+                {% if personal_info.profile_picture %}
+                    <div class="profile-image-wrapper">
+                        <img src="{{ personal_info.profile_picture.url }}"
+                             alt="Zdjęcie profilowe {{ personal_info.first_name }} {{ personal_info.last_name }}"
+                             class="profile-image">
+                    </div>
+                {% else %}
+                    <div class="profile-placeholder">
+                        <span class="placeholder-text">
+                            {{ personal_info.first_name.0 }}{{ personal_info.last_name.0 }}
+                        </span>
+                    </div>
+                {% endif %}
+            </div>
+
+            <div class="col-md-8 text-md-left">
+                <h1 class="display-4">{{ personal_info.first_name }} {{ personal_info.last_name }}</h1>
+                <p class="lead">{{ personal_info.title }}</p>
+                <p>{{ personal_info.bio }}</p>
+                <a href="mailto:{{ personal_info.email }}" class="btn btn-light btn-lg">Skontaktuj się ze mną</a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<!-- Sekcja z najnowszymi projektami -->
+<div class="container">
+    <h2 class="mb-4">Najnowsze Projekty</h2>
+    {% if recent_projects %}
+        <div class="row">
+            {% for project in recent_projects %}
+                <div class="col-md-4 mb-4">
+                    <div class="card h-100 shadow-sm">
+                        <div class="card-body d-flex flex-column">
+                            <h5 class="card-title">
+                                <a href="{{ project.get_absolute_url }}" class="text-dark">{{ project.title }}</a>
+                            </h5>
+                            <p class="card-text">{{ project.description|truncatewords:15 }}</p>
+                            <p class="text-muted small mt-auto">Technologie: {{ project.technologies }}</p>
+                            {% if project.github_url %}
+                                <a href="{{ project.github_url }}" class="btn btn-outline-primary btn-sm" target="_blank" rel="noopener noreferrer">Zobacz kod</a>
+                            {% endif %}
+                        </div>
+                        <div class="card-footer text-muted">
+                            <small>Data: {{ project.created_date|date:"Y-m-d" }}</small>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        <div class="text-center mt-4">
+            <a href="{% url 'projects' %}" class="btn btn-primary">Zobacz wszystkie projekty</a>
+        </div>
+    {% else %}
+        <p>Brak projektów do wyświetlenia.</p>
+    {% endif %}
+    <!-- Sekcja ze scieżką kariery -->
+    <h2> Moje ścieżka kariery jako Junior Python Developer</h2>
+    {% if journey_steps %}
+        <div class="timeline">
+            {% for step in journey_steps %}
+                <div class="timeline-container {% if forloop.counter|divisibleby:2 %}right{% else %}left{% endif %}">
+                    <div class="timeline-content">
+                        <span class="text-muted small">{{ step.date|date:"Y-m-d" }}</span>
+                        <h4 class="mt-1">{{ step.title }}</h4>
+                        <p>{{ step.description }}</p>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+    {% endif %}
+
+    <!-- Sekcja z umiejętnościami -->
+    <h2 class="mb-4 mt-5">Moje umiejętności</h2>
+    {% if skills %}
+        <div class="col-md-5 mx-left">
+            {% for skill in skills %}
+            <div class="d-flex justify-content-between align-items-center mb-3 p-3 border rounded">
+                <span class="h5 mb-0">{{ skill.name }}</span>
+                <div class="stars">
+                    {% for i in "12345" %}
+                        {% if forloop.counter <= skill.level %}
+                            <span class="text-warning fs-4">★</span>
+                        {% else %}
+                            <span class="text-muted fs-4">☆</span>
+                        {% endif %}
+                    {% endfor %}
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    {% else %}
+        <p>Brak umiejętności do wyświetlenia.</p>
+    {% endif %}
+</div>
+{% endblock %}
