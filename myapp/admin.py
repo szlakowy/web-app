@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import PersonalInfo, Project, Skill, JourneyStep
+from .models import PersonalInfo, Project, Skill, JourneyStep, ScraperTechnology
 
 # Register your models here.
 
@@ -17,3 +17,9 @@ class SkillAdmin(admin.ModelAdmin):
 class JourneyStepAdmin(admin.ModelAdmin):
     list_display = ('title', 'date', 'order')
     list_editable = ('order',)
+
+
+@admin.register(ScraperTechnology)
+class ScraperTechnologyAdmin(admin.ModelAdmin):
+    list_display = ('name',)
+    search_fields = ('name',)

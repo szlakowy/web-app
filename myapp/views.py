@@ -3,7 +3,7 @@ from django.contrib import messages
 from django.http import JsonResponse
 from celery.result import AsyncResult
 from django.urls import reverse
-from .models import Project, Skill, JourneyStep, JobOffer
+from .models import Project, Skill, JourneyStep, JobOffer, ScraperTechnology
 from .tasks import scrape_jobs_task
 
 
@@ -58,18 +58,37 @@ def about(request):
 
 def job_scraper(request):
     """dedykowana strona dla aplikcaji Job Scraper"""
+    EXPERIENCE_LEVELS = [
+        ('all', 'Wszystkie'),
+        ('junior', 'Junior'),
+        ('mid', 'Mid'),
+        ('senior', 'Senior'),
+    ]
+
+    PLATFORMS = [
+        ('justjoinit', 'JustJoin.it'),
+        ('nofluffjobs', 'NoFluffJobs'),
+    ]
     task_id = request.GET.get('task_id')
     if request.method == 'POST':
-        technology = request.POST.get('keyword', '')
-        if technology:
-            task = scrape_jobs_task.delay(technology) # odpala zadanie w tle
-            messages.success(request, f"Rozpoczęto wyszukiwanie ofert dla technologii '{technology}'. "
+        technology = request.POST.get('technology', '')
+        experience = request.POST.get('experience', 'all')
+        selected_platforms = request.POST.getlist('platforms')
+        if technology and experience and selected_platforms:
+            task = scrape_jobs_task.delay(technology, experience, selected_platforms) # odpala zadanie w tle
+            messages.success(request, f"Rozpoczęto wyszukiwanie ofert dla technologii '{technology}' "
+                                      f"poziom: {experience} na platformie/ach: {', '.join(selected_platforms)}. "
                                       f"Strona odświeży się automatycznie po zakończeniu" )
             return redirect(f"{reverse('job_scraper')}?task_id={task.id}")
 
     # Ten kod wykona się dla żądania GET (gdy wejdziesz na stronę lub po przekierowaniu)
+    # Pobieramy wszystkie technologie z naszego nowego modelu, aby weyświetlić je w formualrzu.
+    available_technologies = ScraperTechnology.objects.all()
     latest_offers = JobOffer.objects.all()[:20]
     context = {
+        'available_technologies': available_technologies,
+        'experience_levels': EXPERIENCE_LEVELS,
+        'platforms': PLATFORMS,
         'offers': latest_offers,
         'task_id': task_id
     }

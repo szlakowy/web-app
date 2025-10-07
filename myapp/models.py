@@ -89,6 +89,7 @@ class JobOffer(models.Model):
     company = models.CharField(max_length=255, blank=True, null=True)
     location = models.CharField(max_length=255, blank=True, null=True)
     salary = models.CharField(max_length=100, blank=True, null=True)
+    experience_level = models.CharField(max_length=100, blank=True, null=True)
     skills = models.TextField(blank=True, null=True)
     url = models.URLField(max_length=500, unique=True)
     source = models.CharField(max_length=100)
@@ -99,3 +100,15 @@ class JobOffer(models.Model):
 
     def __str__(self):
         return f'{self.title} at {self.company}'
+
+
+class ScraperTechnology(models.Model):
+    name = models.CharField(max_length=100, unique=True, help_text="technology name for eg. python")
+
+    class Meta:
+        verbose_name = "Technologia Scrapera"
+        verbose_name_plural = "Technologie Scrapera"
+        ordering = ['name']
+
+    def __str__(self):
+        return self.name

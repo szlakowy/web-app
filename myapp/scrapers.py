@@ -4,13 +4,80 @@ import logging
 logger = logging.getLogger(__name__)
 
 
-def scrape_justjoinit(technology: str) -> list:
+def scrape_nofluffjobs(technology: str, experience: str = 'all') -> list:
+    with sync_playwright() as p:
+        browser = p.chromium.launch(headless=True)
+        page = browser.new_page()
+
+        base_url = f"https://nofluffjobs.com/pl/{technology.capitalize()}"
+
+        if experience and experience.lower() != 'all':
+            url = f"{base_url}?criteria=seniority%3D{experience.lower()}"
+        else:
+            url = base_url
+
+        try:
+            logger.info(f"Przechodzę do URL: {url}")
+            page.goto(url, wait_until='networkidle')
+
+            # 1. Znajdź główny kontener z wynikami, aby uniknąć sekcji z rekomendacjami.
+            results_container = page.locator("div.list-container").first
+
+            # 2. Szukaj ofert ('nfj-list-item') tylko wewnątrz tego kontenera.
+            jobs = results_container.locator("a[nfj-postings-item]").all()
+        except Exception as e:
+            logger.error(f"Nie udało się załadować strony NoFluffJobs lub znaleźć ofert: {e}")
+            browser.close()
+            return []
+
+        results = []
+        for job_item in jobs[:15]:  # Przetwarzamy pierwsze 15 ofert
+            try:
+                # POPRAWKA: Pobieramy atrybut 'href' bezpośrednio z elementu oferty ('job_item'),
+                # ponieważ to on jest tagiem <a>.
+                href = job_item.get_attribute("href")
+                link = f"https://nofluffjobs.com{href}" if href else None
+
+                # POPRAWKA: Używamy bardziej stabilnych selektorów opartych na atrybutach 'data-cy' i poprawnej strukturze HTML.
+                title = job_item.locator('[data-cy="title position on the job offer listing"]').inner_text()
+                company = job_item.locator('h4.company-name').inner_text().strip()
+                location = job_item.locator('[data-cy="location on the job offer listing"]').inner_text().strip()
+                salary = job_item.locator('[data-cy="salary ranges on the job offer listing"]').inner_text().strip()
+
+                # POPRAWKA: Umiejętności to tagi <span> wewnątrz komponentu <nfj-posting-item-tiles>.
+                skill_elements = job_item.locator('nfj-posting-item-tiles span').all()
+                skills_list = [el.inner_text() for el in skill_elements]
+                skills_str = ", ".join(skills_list)
+
+                if not all([title, company, link, location]):
+                    continue
+
+                results.append({
+                    "title": title, "company": company, "location": location,
+                    "salary": salary,
+                    "skills": skills_str,
+                    "url": link,
+                    "source": "NoFluffJobs"
+                })
+            except Exception as e:
+                logger.warning(f"Pominięto ofertę z NoFluffJobs z powodu błędu: {e}")
+
+        browser.close()
+        logger.info(f"Znaleziono {len(results)} ofert na NoFluffJobs.")
+        return results
+
+
+
+
+
+def scrape_justjoinit(technology: str, experience: str = 'all') -> list:
     """
     Scraper ofert pracy z portalu JustJoin.it.
     To jest synchroniczna wersja Twojego oryginalnego skryptu.
 
     Args:
         technology (str): Technologia do wyszukania (np. 'python').
+        experience (str): Poziom doświadczenia (np. 'junior', 'mid', 'senior', 'all').
 
     Returns:
         list: Lista słowników z danymi ofert pracy.
@@ -18,14 +85,18 @@ def scrape_justjoinit(technology: str) -> list:
     with sync_playwright() as p:
         browser = p.chromium.launch(headless=True)
         page = browser.new_page()
+        base_url = "https://justjoin.it/job-offers/all-locations"
 
-        # Buduj URL dynamicznie na podstawie podanej technologii
-        if technology.lower() == 'all':
-            url = "https://justjoin.it/"
+        if technology and technology.lower() !='all':
+            url = f"{base_url}/{technology.lower()}"
         else:
-            url = f"https://justjoin.it/all-locations/{technology}"
+            url = base_url
+
+        if experience and experience.lower() !='all':
+            url += f"?experience-level={experience.lower()}"
 
         try:
+            logger.info(f"Przechodzę do URL: {url}")
             page.goto(url, wait_until='networkidle')
             # ZMIANA: Czekamy na link, którego atrybut href zaczyna się od "/job-offer/".
             # To jest obecnie najbardziej stabilny identyfikator oferty.
