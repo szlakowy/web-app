@@ -13,7 +13,10 @@ def scrape_jobs_task(keyword):
     Zadanie Celery do scrapowania ofert pracy.
     Wywołuje dedykowane scrapery i zapisuje wyniki do bazy danych.
     """
-    logger.info(f"Rozpoczynam scraping dla słowa kluczowego: {keyword}")
+    if platforms is None:
+        platforms = []
+    logger.info(f"Rozpoczynam scraping dla: {technology}, poziom: {experience}, na platformach: {platforms}")
+    all_offers = []
 
     # 1. Wywołaj scraper i zbierz dane
     justjoinit_offers = scrape_justjoinit(keyword)
