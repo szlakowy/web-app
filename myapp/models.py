@@ -94,6 +94,7 @@ class JobOffer(models.Model):
     url = models.URLField(max_length=500, unique=True)
     source = models.CharField(max_length=100)
     scraped_date = models.DateTimeField(auto_now_add=True)
+    date_posted = models.DateField(blank=True, null=True)
 
     class Meta:
         ordering = ['-scraped_date']

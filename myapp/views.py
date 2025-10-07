@@ -1,5 +1,6 @@
 from django.shortcuts import render, HttpResponse, get_object_or_404, redirect
 from django.contrib import messages
+from django.db.models import Count
 from django.http import JsonResponse
 from celery.result import AsyncResult
 from django.urls import reverse
@@ -101,3 +102,23 @@ def check_task_status(request, task_id):
     result = {'status': task_result.status, 'result': task_result.result}
     return JsonResponse(result)
 
+
+def job_analysis(request):
+    context = {
+        'page_title': 'Analiza Rynku Pracy'
+    }
+    return render(request, 'job_analysis.html', context)
+
+
+def chart_data_api(request):
+
+    platform_data = JobOffer.objects.values('source').annotate(count=Count('id')).order_by('-count')
+
+    labels = [item['source'] for item in platform_data]
+    data = [item['count'] for item in platform_data]
+
+    chart_data = {
+        'labels': labels,
+        'data': data,
+    }
+    return JsonResponse(chart_data)

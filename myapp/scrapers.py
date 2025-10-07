@@ -1,5 +1,6 @@
 from playwright.sync_api import sync_playwright
 import logging
+import json
 
 logger = logging.getLogger(__name__)
 
@@ -31,43 +32,68 @@ def scrape_nofluffjobs(technology: str, experience: str = 'all') -> list:
             return []
 
         results = []
-        for job_item in jobs[:15]:  # Przetwarzamy pierwsze 15 ofert
+        for job_item in jobs[:25]:  # pierwsze 5 ofert na czas testów
             try:
-                # POPRAWKA: Pobieramy atrybut 'href' bezpośrednio z elementu oferty ('job_item'),
-                # ponieważ to on jest tagiem <a>.
                 href = job_item.get_attribute("href")
                 link = f"https://nofluffjobs.com{href}" if href else None
 
-                # POPRAWKA: Używamy bardziej stabilnych selektorów opartych na atrybutach 'data-cy' i poprawnej strukturze HTML.
                 title = job_item.locator('[data-cy="title position on the job offer listing"]').inner_text()
                 company = job_item.locator('h4.company-name').inner_text().strip()
                 location = job_item.locator('[data-cy="location on the job offer listing"]').inner_text().strip()
                 salary = job_item.locator('[data-cy="salary ranges on the job offer listing"]').inner_text().strip()
 
-                # POPRAWKA: Umiejętności to tagi <span> wewnątrz komponentu <nfj-posting-item-tiles>.
                 skill_elements = job_item.locator('nfj-posting-item-tiles span').all()
                 skills_list = [el.inner_text() for el in skill_elements]
                 skills_str = ", ".join(skills_list)
 
+                date_posted = None
+                logger.debug(f"NFJ: Processing link: {link}")
+                if link:
+                    details_page = browser.new_page()
+                    try:
+                        details_page.goto(link, wait_until='domcontentloaded')
+
+                        script_selector = 'script[type="application/ld+json"]'
+                        script_handle = details_page.wait_for_selector(script_selector, state='attached', timeout=5000)
+                        if script_handle:
+                            script_content = script_handle.inner_text()
+                            parsed_json = json.loads(script_content)
+                            
+                            # POPRAWKA: Logika specyficzna dla NoFluffJobs.
+                            # Szukamy obiektu 'JobPosting' wewnątrz listy '@graph'.
+                            job_posting_data = None
+                            if isinstance(parsed_json, dict) and '@graph' in parsed_json:
+                                for item in parsed_json['@graph']:
+                                    if isinstance(item, dict) and item.get('@type') == 'JobPosting':
+                                        job_posting_data = item
+                                        break
+                            date_string = job_posting_data.get('datePosted') if job_posting_data else None
+                            logger.debug(f"NFJ: Raw datePosted from JSON-LD: {date_string}")
+                            date_posted = date_string.split('T')[0] if date_string else None
+                    except Exception as e:
+                        logger.warning(f"Nie udało się pobrać daty dla {link}: {e}")
+                    finally:
+                        details_page.close()
+
                 if not all([title, company, link, location]):
                     continue
 
-                results.append({
+                offer_data = {
                     "title": title, "company": company, "location": location,
                     "salary": salary,
                     "skills": skills_str,
                     "url": link,
-                    "source": "NoFluffJobs"
-                })
+                    "source": "NoFluffJobs",
+                    "date_posted": date_posted,
+                }
+                results.append(offer_data)
+                logger.debug(f"NFJ: Final offer data for {link}: {{'date_posted': {offer_data.get('date_posted')}}}")
             except Exception as e:
                 logger.warning(f"Pominięto ofertę z NoFluffJobs z powodu błędu: {e}")
 
         browser.close()
         logger.info(f"Znaleziono {len(results)} ofert na NoFluffJobs.")
         return results
-
-
-
 
 
 def scrape_justjoinit(technology: str, experience: str = 'all') -> list:
@@ -109,28 +135,17 @@ def scrape_justjoinit(technology: str, experience: str = 'all') -> list:
             return []
 
         results = []
-        for job in jobs[:15]:  # Przetwarzamy pierwsze 15 ofert
+        for job in jobs[:25]:  # Przetwarzamy pierwsze 15 ofert
             try:
                 # Link do oferty
                 href = job.get_attribute("href")
                 link = f"https://justjoin.it{href}" if href else None
 
-                # Tytuł stanowiska
                 title = job.locator('h3').inner_text()
-
-                # Firma
-                # ZMIANA: Lokalizujemy firmę na podstawie ikony, która jest jej stałym sąsiadem.
                 company = job.locator('p:near(svg[data-testid="ApartmentRoundedIcon"])').inner_text()
-
-                # Lokalizacja
                 location = job.locator('span.mui-1o4wo1x').inner_text()
-
-                # Widełki płacowe (przywrócone z Twojego kodu)
-                # ZMIANA: Używamy bardziej ogólnego, ale wciąż skutecznego selektora.
                 salary_el = job.locator('span.mui-13a157h').first
                 salary = salary_el.inner_text() if salary_el else "Nie podano"
-
-                # Skille (przywrócone z Twojego kodu, zaktualizowane selektory)
                 unwanted_texts = {'new', '1-click apply'}
                 skill_elements = job.locator('div.mui-jikuwi').all()
                 skills_list = []
@@ -140,11 +155,49 @@ def scrape_justjoinit(technology: str, experience: str = 'all') -> list:
                         skills_list.append(skill_text)
                 skills_str = ", ".join(skills_list)
 
+                date_posted = None
+                logger.debug(f"JJIT: Processing link: {link}")
+                if link:
+                    details_page = browser.new_page()
+                    try:
+                        details_page.goto(link, wait_until='domcontentloaded')
+
+                        script_selector = 'script[type="application/ld+json"]'
+                        script_handle = details_page.wait_for_selector(script_selector, state='attached', timeout=5000)
+                        if script_handle:
+                            script_content = script_handle.inner_text()
+                            # POPRAWKA: Sprawdzamy, czy dane są listą, czy pojedynczym obiektem.
+                            parsed_json = json.loads(script_content)
+                            if isinstance(parsed_json, list):
+                                # Jeśli to lista, bierzemy pierwszy element.
+                                data = parsed_json[0]
+                            else:
+                                # Jeśli to pojedynczy obiekt, używamy go bezpośrednio.
+                                data = parsed_json
+                            logger.debug(f"JJIT: Raw data from JSON-LD: {data}")
+                            date_string = data.get('datePosted')
+                            date_posted = date_string.split('T')[0] if date_string else None
+                    except Exception as e:
+                        logger.warning(f"Nie udało się pobrać daty dla {link}: {e}")
+                    finally:
+                        details_page.close()
+
                 if not all([title, company, link, location]):
                     continue
 
                 # Dodaj wynik
-                results.append({"title": title, "company": company, "location": location, "salary": salary, "skills": skills_str, "url": link, "source": "JustJoin.IT"})
+                offer_data = {
+                    "title": title,
+                    "company": company,
+                    "location": location,
+                    "salary": salary,
+                    "skills": skills_str,
+                    "url": link,
+                    "source": "JustJoin.IT",
+                    "date_posted": date_posted,
+                }
+                results.append(offer_data)
+                logger.debug(f"JJIT: Final offer data for {link}: {{'date_posted': {offer_data.get('date_posted')}}}")
             except Exception as e:
                 logger.warning(f"Pominięto ofertę z powodu błędu podczas parsowania: {e}")
 

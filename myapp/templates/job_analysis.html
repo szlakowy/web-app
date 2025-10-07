@@ -1,0 +1,61 @@
+<!-- myapp/templates/job_analysis.html -->
+{% extends 'base.html' %}
+
+{% block title %}{{ page_title }}{% endblock %}
+
+{% block content %}
+<div class="container mt-5 mb-5">
+    <div class="text-center mb-5">
+        <h1 class="display-4">{{ page_title }}</h1>
+        <p class="lead text-muted">Wizualizacja danych zebranych prze Job Scraper</p>
+    </div>
+    <div class="card">
+        <div class="card-body">
+            <h5 class="card-title">Liczba ofert w podziale na platformy</h5>
+            <canvas id="platformChart"></canvas>
+        </div>
+    </div>
+</div>
+{% endblock %}
+{# dodatkowy JS#}
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function (){
+        fetch("{% url 'chart_data_api' %}")
+            .then(response => response.json())
+            .then(apiData => {
+                const ctx = document.getElementById('platformChart').getContext('2d');
+
+                new Chart(ctx, {
+                    type: 'bar',
+                    data: {
+                        labels: apiData.labels,
+                        datasets: [{
+                            label: 'Liczba ofert',
+                            data: apiData.data,
+                            backgroundColor: [
+                                'rgba(255, 99, 132, 0.2)',
+                                'rgba(54, 162, 235, 0.2)',
+                                'rgba(255, 206, 86, 0.2)',
+                            ],
+                            borderColor: [
+                                'rgba(255, 99, 132, 1)',
+                                'rgba(54, 162, 235, 1)',
+                                'rgba(255, 206, 86, 1)',
+                            ],
+                            borderWidth: 1
+                        }]
+                    },
+                    options: {
+                        scales: {
+                            y: {
+                                beginAtZero: true
+                            }
+                        }
+                    }
+                });
+            });
+    });
+</script>
+{% endblock %}

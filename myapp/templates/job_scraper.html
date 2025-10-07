@@ -94,6 +94,9 @@
                                 <p class="mb-1"><small>Wymagane: {{ offer.skills }}</small></p>
                             {% endif %}
                             <small class="text-muted">Źródło: {{ offer.source }}</small>
+                            {% if offer.date_posted %}
+                                <small class="text-muted ml-3">Opublikowano: {{ offer.date_posted|date:"d.m.Y" }}</small>
+                            {% endif %}
                         </a>
                     {% empty %}
                         <div class="alert alert-info" role="alert">

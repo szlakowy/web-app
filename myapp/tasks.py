@@ -34,11 +34,20 @@ def scrape_jobs_task(technology, experience='all', platforms=None):
     offers_added = 0
     for offer_data in all_offers:
         # Używamy update_or_create, aby unikać duplikatów na podstawie unikalnego URL
+        # Debugging: Log the offer_data before processing date_posted
+        logger.debug(f"TASK: Processing offer_data (raw): {offer_data}")
+        
+        # Kluczowe: Wyciągamy 'date_posted' ze słownika, aby Django poprawnie
+        # zinterpretowało typ danych przy aktualizacji pola DateField.
+        date_posted_value = offer_data.pop('date_posted', None)
+        logger.debug(f"TASK: Extracted date_posted_value: {date_posted_value}")
+
         obj, created = JobOffer.objects.update_or_create(
             url=offer_data['url'],
             defaults={
                 **offer_data,
-                'experience_level': experience if experience != 'all' else None
+                'experience_level': experience if experience != 'all' else None,
+                'date_posted': date_posted_value,  # Jawnie przypisujemy przetworzoną datę
             }
         )
         if created:
