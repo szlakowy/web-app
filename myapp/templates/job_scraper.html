@@ -86,6 +86,15 @@
                                 <h5 class="mb-1">{{ offer.title }}</h5>
                                 <small>{{ offer.scraped_date|timesince }} temu</small>
                             </div>
+                            {# Dodajemy etykiety z technologią i doświadczeniem #}
+                            <div class="mb-2">
+                                {% if offer.main_technology %}
+                                    <span class="badge badge-primary">{{ offer.main_technology|capfirst }}</span>
+                                {% endif %}
+                                {% if offer.experience_level and offer.experience_level != 'Nie określono' %}
+                                    <span class="badge badge-info">{{ offer.experience_level|capfirst }}</span>
+                                {% endif %}
+                            </div>
                             <p class="mb-1">{{ offer.company }} - {{ offer.location }}</p>
                             {% if offer.salary and offer.salary != "Nie podano" %}
                                 <p class="mb-1 font-weight-bold text-success">{{ offer.salary }}</p>

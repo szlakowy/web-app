@@ -1,6 +1,7 @@
 from playwright.sync_api import sync_playwright
 import logging
 import json
+import re
 
 logger = logging.getLogger(__name__)
 
@@ -37,7 +38,8 @@ def scrape_nofluffjobs(technology: str, experience: str = 'all') -> list:
                 href = job_item.get_attribute("href")
                 link = f"https://nofluffjobs.com{href}" if href else None
 
-                title = job_item.locator('[data-cy="title position on the job offer listing"]').inner_text()
+                raw_title = job_item.locator('h3.posting-title__position').inner_text()
+                title = raw_title.replace('NOWA','').strip()
                 company = job_item.locator('h4.company-name').inner_text().strip()
                 location = job_item.locator('[data-cy="location on the job offer listing"]').inner_text().strip()
                 salary = job_item.locator('[data-cy="salary ranges on the job offer listing"]').inner_text().strip()
@@ -146,12 +148,12 @@ def scrape_justjoinit(technology: str, experience: str = 'all') -> list:
                 location = job.locator('span.mui-1o4wo1x').inner_text()
                 salary_el = job.locator('span.mui-13a157h').first
                 salary = salary_el.inner_text() if salary_el else "Nie podano"
-                unwanted_texts = {'new', '1-click apply'}
+                unwanted_patterns = {r'^new$', r'^1-click$', r'^\d+d left$', r'^Expires tomorrow$'}
                 skill_elements = job.locator('div.mui-jikuwi').all()
                 skills_list = []
                 for skill_el in skill_elements:
                     skill_text = skill_el.inner_text()
-                    if skill_text.lower() not in unwanted_texts:
+                    if not any(re.match(pattern, skill_text, re.IGNORECASE) for pattern in unwanted_patterns):
                         skills_list.append(skill_text)
                 skills_str = ", ".join(skills_list)
 

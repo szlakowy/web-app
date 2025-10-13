@@ -46,7 +46,8 @@ def scrape_jobs_task(technology, experience='all', platforms=None):
             url=offer_data['url'],
             defaults={
                 **offer_data,
-                'experience_level': experience if experience != 'all' else None,
+                'main_technology': technology,
+                'experience_level': experience if experience != 'all' else "Nie określono",
                 'date_posted': date_posted_value,  # Jawnie przypisujemy przetworzoną datę
             }
         )

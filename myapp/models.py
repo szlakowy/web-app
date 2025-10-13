@@ -89,6 +89,8 @@ class JobOffer(models.Model):
     company = models.CharField(max_length=255, blank=True, null=True)
     location = models.CharField(max_length=255, blank=True, null=True)
     salary = models.CharField(max_length=100, blank=True, null=True)
+    main_technology = models.CharField(max_length=100, blank=True, null=True,
+                                       help_text='główna technologia z wyszukiwania')
     experience_level = models.CharField(max_length=100, blank=True, null=True)
     skills = models.TextField(blank=True, null=True)
     url = models.URLField(max_length=500, unique=True)
