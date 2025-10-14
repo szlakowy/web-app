@@ -7,11 +7,23 @@ from django.urls import reverse
 from .models import Project, Skill, JourneyStep, JobOffer, ScraperTechnology
 from .tasks import scrape_jobs_task
 
+# Stałe dla widoku job_scraper, przeniesione poza funkcję dla lepszej wydajności.
+EXPERIENCE_LEVELS = [
+    ('all', 'Wszystkie'),
+    ('junior', 'Junior'),
+    ('mid', 'Mid'),
+    ('senior', 'Senior'),
+]
+
+PLATFORMS = [
+    ('justjoinit', 'JustJoin.it'),
+    ('nofluffjobs', 'NoFluffJobs'),
+]
 
 def home(request):
     """Strona główna - wyświetla podstawowe informacje i najnowsze projekty"""
-    # Pobierz 3 najnowsze projekty
-    recent_projects = Project.objects.all()[:3]
+    # Jawne sortowanie gwarantuje pobranie najnowszych projektów.
+    recent_projects = Project.objects.order_by('-created_date')[:3]
 
     # Pobierz wszystkie umiejętności
     skills = Skill.objects.all()
@@ -28,7 +40,7 @@ def home(request):
 
 def projects(request):
     """Strona ze wszystkimi projektami"""
-    all_projects = Project.objects.all()
+    all_projects = Project.objects.order_by('-created_date')
 
     context = {
         'all_projects': all_projects,
@@ -59,17 +71,6 @@ def about(request):
 
 def job_scraper(request):
     """dedykowana strona dla aplikcaji Job Scraper"""
-    EXPERIENCE_LEVELS = [
-        ('all', 'Wszystkie'),
-        ('junior', 'Junior'),
-        ('mid', 'Mid'),
-        ('senior', 'Senior'),
-    ]
-
-    PLATFORMS = [
-        ('justjoinit', 'JustJoin.it'),
-        ('nofluffjobs', 'NoFluffJobs'),
-    ]
     task_id = request.GET.get('task_id')
     if request.method == 'POST':
         technology = request.POST.get('technology', '')
@@ -85,7 +86,8 @@ def job_scraper(request):
     # Ten kod wykona się dla żądania GET (gdy wejdziesz na stronę lub po przekierowaniu)
     # Pobieramy wszystkie technologie z naszego nowego modelu, aby weyświetlić je w formualrzu.
     available_technologies = ScraperTechnology.objects.all()
-    latest_offers = JobOffer.objects.all()[:20]
+    # Jawne sortowanie gwarantuje pobranie najnowszych ofert.
+    latest_offers = JobOffer.objects.order_by('-scraped_date')[:20]
     context = {
         'available_technologies': available_technologies,
         'experience_levels': EXPERIENCE_LEVELS,
@@ -112,13 +114,13 @@ def job_analysis(request):
 
 def chart_data_api(request):
 
-    platform_data = JobOffer.objects.values('source').annotate(count=Count('id')).order_by('-count')
+    # Użycie values_list jest nieco bardziej wydajne, gdy nie potrzebujemy słowników.
+    platform_data = JobOffer.objects.values('source').annotate(count=Count('id')).order_by('-count').values_list('source', 'count')
 
-    labels = [item['source'] for item in platform_data]
-    data = [item['count'] for item in platform_data]
+    labels, data = zip(*platform_data) if platform_data else ([], [])
 
     chart_data = {
-        'labels': labels,
-        'data': data,
+        'labels': list(labels),
+        'data': list(data),
     }
     return JsonResponse(chart_data)

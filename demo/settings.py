@@ -25,7 +25,8 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = 'django-insecure-_kf=7ftjy&kzro)z#q=4tvz(p6_$hi&)g@yugcjfp_4d9l1xek'
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+# Pamiętaj, aby ustawić DEBUG = False przed wdrożeniem produkcyjnym.
+DEBUG = True 
 
 ALLOWED_HOSTS = []
 
@@ -134,5 +135,6 @@ CELERY_TASK_SERIALIZER = 'json'
 CELERY_RESULT_SERIALIZER = 'json'
 
 # Celery logging level for debugging
-CELERY_WORKER_LOG_LEVEL = 'DEBUG'
-CELERY_TASK_LOG_LEVEL = 'DEBUG'
+# Poniższe ustawienia są przydatne w dewelopmencie. Na produkcji warto zmienić na 'INFO' lub 'WARNING'.
+CELERY_WORKER_LOG_LEVEL = 'INFO'
+CELERY_TASK_LOG_LEVEL = 'INFO'
