@@ -8,8 +8,16 @@ logger = logging.getLogger(__name__)
 
 def scrape_nofluffjobs(technology: str, experience: str = 'all') -> list:
     with sync_playwright() as p:
-        browser = p.chromium.launch(headless=False)
-        page = browser.new_page()
+        headless_mode = True
+        browser = p.chromium.launch(headless=headless_mode,args=['--disable-blink-features=AutomationControlled'])
+        context = browser.new_context(user_agent=(
+            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+            "AppleWebKit/537.36 (KHTML, like Gecko) "
+            "Chrome/117.0.0.0 Safari/537.36"
+        ))
+        context.set_default_navigation_timeout(30000)  # limit czasu na nawigację
+        context.set_default_timeout(10000)  # limit na oczekiwanie elementów
+        page = context.new_page()
 
         base_url = f"https://nofluffjobs.com/pl/{technology.capitalize()}"
 
@@ -21,22 +29,25 @@ def scrape_nofluffjobs(technology: str, experience: str = 'all') -> list:
         try:
             logger.info(f"Przechodzę do URL: {url}")
             page.goto(url, wait_until='domcontentloaded')
-            logger.info("Czekam chwilę (1s) po obsłudze cookies na załadowanie reszty strony...")
-            page.wait_for_timeout(7000)
+            """" Obsługa cookies na NFJ w tybie headless_mode=False warto zatrzymac na 7s """
             try:
+                # page.wait_for_timeout(7000)
                 accept_button = page.locator('.accept')
-                logger.info("Próbuję znaleźć przycisk akceptacji cookie na NoFluffJobs...")
-                accept_button.wait_for(state='visible', timeout=5000)
-                logger.info("Przycisk znaleziony, próbuję kliknąć...")
-                accept_button.click()
-                logger.info("Banner cookie na NoFluffJobs został zaakceptowany.")
+                if accept_button and accept_button.is_visible():
+                    accept_button.click()
+                    logger.info("Banner cookie na NoFluffJobs został zaakceptowany.")
             except Exception as e:
-                logger.warning(f"Nie udało się automatycznie zaakceptować cookies na NFJ (możliwe, że już zaakceptowano): {e}")
+                logger.warning(f"Nie udało się automatycznie zaakceptować cookies na NFJ: {e}")
 
-            results_container = page.locator("div.list-container").first
-            results_container.wait_for(state='visible', timeout=15000)
+            all_containers = page.locator("div.list-container").all()
+            results_container = all_containers[:2]
 
-            jobs = results_container.locator("a[nfj-postings-item]").all()
+            jobs = []
+            for container in results_container:
+                container.wait_for(state='visible', timeout=15000)
+                jobs_container = container.locator("a[nfj-postings-item]").all()
+                jobs.extend(jobs_container)
+
         except Exception as e:
             logger.error(f"Nie udało się załadować strony NoFluffJobs lub znaleźć ofert: {e}")
             browser.close()
