@@ -1,14 +1,15 @@
 # /Users/jakublanda/Desktop/web_app/demo/myapp/management/commands/debug_scraper.py
 
 from django.core.management.base import BaseCommand
-from myapp.scrapers import scrape_justjoinit
+from myapp.scrapers import scrape_nofluffjobs
 import logging
 
 # Ustawiamy logger, aby widzieć komunikaty w terminalu
 logger = logging.getLogger(__name__)
 
+
 class Command(BaseCommand):
-    help = 'Uruchamia scraper JustJoin.it w trybie debugowania (z widoczną przeglądarką).'
+    help = 'Uruchamia scraper NoFluffJobs w trybie debugowania (z widoczną przeglądarką).'
 
     def handle(self, *args, **options):
         self.stdout.write(self.style.SUCCESS("--- Uruchamiam scraper w trybie podglądu... ---"))
@@ -16,7 +17,7 @@ class Command(BaseCommand):
 
         # Ta linia otworzy widoczne okno przeglądarki.
         try:
-            offers = scrape_justjoinit(technology='python', experience='junior')
+            offers = scrape_nofluffjobs(technology='python', experience='all')
         except Exception as e:
             self.stderr.write(self.style.ERROR(f"Wystąpił błąd podczas scrapowania: {e}"))
             return

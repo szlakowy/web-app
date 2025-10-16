@@ -8,7 +8,7 @@ logger = logging.getLogger(__name__)
 
 def scrape_nofluffjobs(technology: str, experience: str = 'all') -> list:
     with sync_playwright() as p:
-        browser = p.chromium.launch(headless=True)
+        browser = p.chromium.launch(headless=False)
         page = browser.new_page()
 
         base_url = f"https://nofluffjobs.com/pl/{technology.capitalize()}"
@@ -20,12 +20,22 @@ def scrape_nofluffjobs(technology: str, experience: str = 'all') -> list:
 
         try:
             logger.info(f"Przechodzę do URL: {url}")
-            page.goto(url, wait_until='networkidle')
+            page.goto(url, wait_until='domcontentloaded')
+            logger.info("Czekam chwilę (1s) po obsłudze cookies na załadowanie reszty strony...")
+            page.wait_for_timeout(7000)
+            try:
+                accept_button = page.locator('.accept')
+                logger.info("Próbuję znaleźć przycisk akceptacji cookie na NoFluffJobs...")
+                accept_button.wait_for(state='visible', timeout=5000)
+                logger.info("Przycisk znaleziony, próbuję kliknąć...")
+                accept_button.click()
+                logger.info("Banner cookie na NoFluffJobs został zaakceptowany.")
+            except Exception as e:
+                logger.warning(f"Nie udało się automatycznie zaakceptować cookies na NFJ (możliwe, że już zaakceptowano): {e}")
 
-            # 1. Znajdź główny kontener z wynikami, aby uniknąć sekcji z rekomendacjami.
             results_container = page.locator("div.list-container").first
+            results_container.wait_for(state='visible', timeout=15000)
 
-            # 2. Szukaj ofert ('nfj-list-item') tylko wewnątrz tego kontenera.
             jobs = results_container.locator("a[nfj-postings-item]").all()
         except Exception as e:
             logger.error(f"Nie udało się załadować strony NoFluffJobs lub znaleźć ofert: {e}")
@@ -41,7 +51,40 @@ def scrape_nofluffjobs(technology: str, experience: str = 'all') -> list:
                 raw_title = job_item.locator('h3.posting-title__position').inner_text()
                 title = raw_title.replace('NOWA', '').strip()
                 company = job_item.locator('h4.company-name').inner_text().strip()
-                location = job_item.locator('[data-cy="location on the job offer listing"]').inner_text().strip()
+
+                # --- NOWA LOGIKA POBIERANIA LOKALIZACJI ---
+                location_element = job_item.locator('[data-cy="location on the job offer listing"]')
+                # Domyślnie używamy skróconego tekstu (np. „Zdalnie +5” albo nazwy miasta)
+                summary_text = location_element.inner_text().replace('\xa0', ' ').strip()
+                location = summary_text
+                try:
+                    # Upewniamy się, że element jest w zasięgu widoku i najeżdżamy na niego
+                    location_element.scroll_into_view_if_needed()
+                    location_element.hover()
+                    # Czekamy chwilę, aby pop‑over zdążył się pojawić
+                    page.wait_for_timeout(500)
+                    # Pop‑over jest osadzony wewnątrz danego elementu oferty
+                    popover_body = job_item.locator('popover-content .popover-body')
+                    if popover_body.count() > 0:
+                        # Najpierw próbujemy pobrać wszystkie linki z pop‑overa – każdy link to osobna lokalizacja
+                        anchor_texts = [
+                            text.replace('\xa0', ' ').strip()
+                            for text in popover_body.locator('a').all_text_contents()
+                            if text.strip()
+                        ]
+                        if anchor_texts:
+                            location = ", ".join(sorted(set(anchor_texts)))
+                        else:
+                            # Jeżeli nie ma linków, czytamy cały tekst pop‑overa i dzielimy po nowych liniach
+                            pop_text = popover_body.inner_text().replace('\xa0', ' ').strip()
+                            if pop_text:
+                                lines = [line.strip() for line in pop_text.split('\n') if line.strip()]
+                                if lines:
+                                    location = ", ".join(sorted(set(lines)))
+                except Exception as e:
+                    logger.debug(f"Nie udało się pobrać pełnej listy lokalizacji dla '{title}': {e}")
+                # --- KONIEC NOWEJ LOGIKI POBIERANIA LOKALIZACJI ---
+
                 salary = job_item.locator('[data-cy="salary ranges on the job offer listing"]').inner_text().strip()
 
                 skill_elements = job_item.locator('nfj-posting-item-tiles span').all()
@@ -60,9 +103,6 @@ def scrape_nofluffjobs(technology: str, experience: str = 'all') -> list:
                         if script_handle:
                             script_content = script_handle.inner_text()
                             parsed_json = json.loads(script_content)
-                            
-                            # POPRAWKA: Logika specyficzna dla NoFluffJobs.
-                            # Szukamy obiektu 'JobPosting' wewnątrz listy '@graph'.
                             job_posting_data = None
                             if isinstance(parsed_json, dict) and '@graph' in parsed_json:
                                 for item in parsed_json['@graph']:
@@ -96,6 +136,7 @@ def scrape_nofluffjobs(technology: str, experience: str = 'all') -> list:
         browser.close()
         logger.info(f"Znaleziono {len(results)} ofert na NoFluffJobs.")
         return results
+
 
 
 def scrape_justjoinit(technology: str, experience: str = 'all') -> list:
