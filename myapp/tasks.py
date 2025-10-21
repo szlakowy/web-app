@@ -1,6 +1,7 @@
 from celery import shared_task
 from .models import JobOffer
-from .scrapers import scrape_justjoinit, scrape_nofluffjobs
+from .scrapers.justjoinit import scrape_justjoinit
+from .scrapers.nofluff import scrape_nofluffjobs
 import logging
 
 # Ustawienie loggera, aby widzieć postępy w konsoli workera Celery
