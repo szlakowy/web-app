@@ -12,4 +12,4 @@ RUN playwright install chromium
 
 COPY . .
 
-CMD ["gunicorn", "demo.wsgi:application", "--bind", "0.0.0.0:${PORT}"]
+CMD ["sh", "-c", "gunicorn demo.wsgi:application --bind 0.0.0.0:${PORT:-8000}"]
