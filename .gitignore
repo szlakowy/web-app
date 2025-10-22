@@ -6,8 +6,9 @@ __pycache__/
 *.db
 /staticfiles/
 /media/
-/migrations/
 .env
 venv/
 .idea/
 .vscode/
+*.DS_Store
+profile_pictures/
