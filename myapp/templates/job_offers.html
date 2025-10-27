@@ -1,0 +1,85 @@
+{% extends 'base.html' %}
+
+{% block title %}Job Offers{% endblock %}
+
+{% block content %}
+    <div class="container mt-4">
+        <h1>Job Offers</h1>
+
+        {% if messages %}
+            <div class="messages">
+                {% for message in messages %}
+                    <div class="alert alert-{{ message.tags }}">{{ message }}</div>
+                {% endfor %}
+        </div>
+    {% endif %}
+    <form method="get" action="{% url 'job_offers' %}" class="row g-3 align-items-end mb-4">
+        <div class="col-auto">
+            <label for="experience" class="form-label">Doświadczenie</label>
+            <select name="experience" id="experience" class="form-select">
+                {% for value, label in experience_levels %}
+                    <option value="{{ value }}" {% if value == selected_experience %}selected{% endif %}>
+                        {{ label }}
+                    </option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="col-auto">
+            <button type="submit" class="btn btn-secondary">Filtruj</button>
+        </div>
+        <div class="col-auto">
+        <label for="technology" class="form-label">Technologia</label>
+        <select name="technology" id="technology" class="form-select">
+            <option value="all" {% if selected_technology == 'all' %}selected{% endif %}>Wszystkie</option>
+            {% for tech in technologies %}
+                <option value="{{ tech }}" {% if tech == selected_technology %}selected{% endif %}>
+                    {{ tech }}
+                </option>
+            {% endfor %}
+        </select>
+    </div>
+    <div class="col-auto">
+        <button type="submit" class="btn btn-secondary">Filtruj</button>
+    </div>
+    </form>
+
+
+    <form method="post" action="{% url 'job_offers' %}" class="mb-4">
+        {% csrf_token %}
+        <button type="submit" class="btn btn-primary">Pobierz oferty</button>
+    </form>
+
+    {% if offers %}
+    <div class="table-responsive">
+        <table class="table table-striped table-hover">
+            <thead>
+                <tr>
+                    <th>Title</th>
+                    <th>Company</th>
+                    <th>Main Technology</th>
+                    <th>Experience Level</th>
+                    <th>Source</th>
+                    <th>Scraped Date</th>
+                    <th>URL</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for offer in offers %}
+                <tr>
+                    <td>{{ offer.title }}</td>
+                    <td>{{ offer.company }}</td>
+                    <td>{{ offer.main_technology }}</td>
+                    <td>{{ offer.experience_level }}</td>
+                    <td>{{ offer.source }}</td>
+                    <td>{{ offer.scraped_date }}</td>
+                    <td><a href="{{ offer.url }}" target="_blank">Link</a></td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <p>No job offers found. Click "Pobierz oferty" to start scraping.</p>
+    {% endif %}
+</div>
+{% endblock %}
