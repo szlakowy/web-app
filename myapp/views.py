@@ -5,20 +5,9 @@ from django.http import JsonResponse
 from celery.result import AsyncResult
 from django.urls import reverse
 from .models import Project, Skill, JourneyStep, JobOffer, ScraperTechnology
-from .tasks import scrape_jobs_task
+from .tasks import scrape_jobs_task, scrape_full_matrix_task
+from .constants import EXPERIENCE_LEVELS_UI as EXPERIENCE_LEVELS, PLATFORMS_UI as PLATFORMS
 
-# Stałe dla widoku job_scraper, przeniesione poza funkcję dla lepszej wydajności.
-EXPERIENCE_LEVELS = [
-    ('all', 'Wszystkie'),
-    ('junior', 'Junior'),
-    ('mid', 'Mid'),
-    ('senior', 'Senior'),
-]
-
-PLATFORMS = [
-    ('justjoinit', 'JustJoin.it'),
-    ('nofluffjobs', 'NoFluffJobs'),
-]
 
 def home(request):
     """Strona główna - wyświetla podstawowe informacje i najnowsze projekty"""
@@ -124,3 +113,46 @@ def chart_data_api(request):
         'data': list(data),
     }
     return JsonResponse(chart_data)
+
+
+def job_offers(request):
+    """
+    Widok do wyświetlania ofert pracy i uruchamiania pełnego scrapowania.
+    GET: Zwraca wszystkie JobOffer posortowane po -scraped_date.
+    POST: Odpala scrape_full_matrix_task.delay() i przekierowuje.
+    """
+    selected_experience = request.GET.get('experience', 'all')
+    selected_technology = request.GET.get('technology', 'all')
+    offers_qs = JobOffer.objects.all().order_by('-scraped_date')
+    if selected_experience and selected_experience != 'all':
+        offers_qs = offers_qs.filter(experience_level__iexact=selected_experience)
+    if selected_technology and selected_technology != 'all':
+        offers_qs = offers_qs.filter(main_technology__iexact=selected_technology)
+
+    if request.method == 'POST':
+        # Odpala zadanie Celery w tle
+        task = scrape_full_matrix_task.delay()
+        messages.success(
+            request,
+            "Rozpoczęto pełne scrapowanie ofert pracy. Strona odświeży się automatycznie po zakończeniu."
+        )
+        # Przekieruj na tę samą stronę, aby uniknąć ponownego wysłania formularza
+        return redirect('job_offers')
+    else:
+        # GET request: wyświetl wszystkie oferty pracy
+        technologies = (
+            JobOffer.objects
+            .exclude(main_technology__isnull=True)
+            .exclude(main_technology__exact='')
+            .values_list('main_technology', flat=True)
+            .order_by()
+            .distinct()
+        )
+        context = {
+            'offers': offers_qs,
+            'experience_levels': EXPERIENCE_LEVELS,
+            'selected_experience': selected_experience,
+            'technologies': technologies,
+            'selected_technology': selected_technology,
+        }
+        return render(request, 'job_offers.html', context)

@@ -19,7 +19,7 @@ def scrape_justjoinit(technology: str, experience: str = 'all') -> list:
         list: Lista słowników z danymi ofert pracy.
     """
     with sync_playwright() as p:
-        headless_mode = True
+        headless_mode = False
         browser = p.chromium.launch(headless=headless_mode, args=['--disable-blink-features=AutomationControlled'])
         context = browser.new_context(user_agent=(
             "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "

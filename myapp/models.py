@@ -115,3 +115,28 @@ class ScraperTechnology(models.Model):
 
     def __str__(self):
         return self.name
+
+
+class ScraperTechnologyFilter(models.Model):
+    technology = models.ForeignKey(
+        ScraperTechnology,
+        on_delete=models.CASCADE,
+        related_name="platform_filters",
+        help_text="Technologia widoczna w formularzu",
+    )
+    platform = models.CharField(
+        max_length=50,
+        help_text="Identyfikator platformy, np. 'justjoinit' albo 'nofluffyjobs'."
+    )
+    value = models.CharField(
+        max_length=100,
+        help_text="Slug/filtr przekazany do scrapera."
+    )
+
+    class Meta:
+        unique_together = ('technology', 'platform')
+        verbose_name = "Filtr technologii dla platformy"
+        verbose_name_plural = "Filtry technologii dla platform"
+
+    def __str__(self):
+        return f"{self.technology} - {self.platform}: {self.value}"
